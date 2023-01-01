@@ -1,6 +1,7 @@
 import pygame
 import pygame_menu
 import sys
+import pygame.mixer as mixer
 
 # screen resolution
 res = (1024,768)
@@ -32,7 +33,7 @@ smallfont = pygame.font.SysFont('Corbel',35)
 # this font
 text = smallfont.render('quit' , True , color)
 
-def set_difficulty(value, difficulty):
+def set_number_of_players(value, difficulty):
     # Do the job here !
     pass
 
@@ -40,11 +41,17 @@ def start_the_game():
     # Do the job here !
     pass
 
+# Play Intro Music
+mixer.init()
+mixer.music.load("music/intro.mp3")
+mixer.music.set_volume(0.7)
+mixer.music.play()
+
 menu = pygame_menu.Menu('Welcome', 400, 300,
                        theme=pygame_menu.themes.THEME_BLUE)
 
 menu.add.text_input('Name :', default='John Doe')
-menu.add.selector('Difficulty :', [('Hard', 1), ('Easy', 2)], onchange=set_difficulty)
+menu.add.selector('Players :', [('1', 1), ('2', 2), ('3', 3), ('4', 4)], onchange=set_number_of_players)
 menu.add.button('Play', start_the_game)
 menu.add.button('Quit', pygame_menu.events.EXIT)
 
