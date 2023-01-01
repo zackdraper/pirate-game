@@ -3,6 +3,7 @@ import pygame_menu
 import sys
 import pygame.mixer as mixer
 from pygame_menu import sound
+from ship_battle import main as ship_battle 
 
 res = (1024,768)
 
@@ -15,19 +16,19 @@ color_dark = (100,100,100)
 width = screen.get_width()
 height = screen.get_height()
 
-
-
-def set_number_of_players(value, difficulty):
-    # Do the job here !
-    pass
+def set_number_of_players(value, players):
+    NUM_PLAYERS = value
+    global NUM_PLAYERS
 
 def start_the_game():
-    # Do the job here !
-    pass
+    pygame.mixer.music.stop()
+    # Run game
+    mixer.music.play(loops=-1)
 
 def start_ship_battle():
-    # Do the job here !
-    pass
+    pygame.mixer.music.stop()
+    ship_battle()
+    mixer.music.play(loops=-1)
 
 def game_credits():
     pass
@@ -40,11 +41,10 @@ mixer.music.load("music/intro.mp3")
 mixer.music.set_volume(0.7)
 mixer.music.play(loops=-1)
 
+# Sounds
 menu_sound = sound.Sound()
 menu_sound.set_sound(pygame_menu.sound.SOUND_TYPE_WIDGET_SELECTION, sound_file='music/sword.mp3')
 
-# Sounds
-pygame_menu.sound.SOUND_TYPE_WIDGET_SELECTION
 
 game_theme = pygame_menu.themes.THEME_DARK
 title_image = pygame_menu.baseimage.BaseImage(

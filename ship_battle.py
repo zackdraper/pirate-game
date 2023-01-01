@@ -1,20 +1,13 @@
-# import the pygame module
 import pygame
-
-# import random for random numbers!
 import random
 import numpy as np
-
-# import pygame.locals for easier access to key coordinates
 from pygame.locals import *
-
-screen_width = 1024
-screen_height = 768
 
 width_buffer = 100
 height_buffer = 0
 
-pygame.display.set_caption('Ship Battle')
+screen_width = 1024
+screen_height = 768
 
 class PlayerShip(pygame.sprite.Sprite):
     def __init__(self, x0, y0, angle):
@@ -248,7 +241,7 @@ class AIShip(PlayerShip):
 class AI_Control():
     pass
 
-def player_stats(PlayerShip,num,side):
+def player_stats(screen,PlayerShip,num,side):
 
     strings = [
         "Player: "+str(int(num)),
@@ -268,113 +261,116 @@ def player_stats(PlayerShip,num,side):
             stat = font.render(s, True, (255,255,255), (0,0,0))
             screen.blit(stat, (0,dy*25))
 
+def main():
+    pygame.display.set_caption('Ship Battle')
 
-# initialize pygame
-pygame.init()
+    # initialize pygame
+    pygame.init()
 
-# create the screen object
-screen = pygame.display.set_mode((screen_width, screen_height))
+    # create the screen object
+    screen = pygame.display.set_mode((screen_width, screen_height))
 
-#background
-background = pygame.Surface(screen.get_size())
-background.fill((0, 154, 255))
+    #background
+    background = pygame.Surface(screen.get_size())
+    background.fill((0, 154, 255))
 
-# create players
-pygame.joystick.init()
-joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
+    # create players
+    pygame.joystick.init()
+    joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
-rand_num = random.random()
-a1 = np.floor(rand_num * 360)
-a2 = a1 - 180 % 360
+    rand_num = random.random()
+    a1 = np.floor(rand_num * 360)
+    a2 = a1 - 180 % 360
 
-a1_rad = np.deg2rad(a1)
-a2_rad = np.deg2rad(a2)
+    a1_rad = np.deg2rad(a1)
+    a2_rad = np.deg2rad(a2)
 
-r = (screen_height-100)/2
-x1 = r * np.sin(a1_rad) + screen_width/2
-y1 = -1 * r * np.cos(a1_rad) + screen_height/2
+    r = (screen_height-100)/2
+    x1 = r * np.sin(a1_rad) + screen_width/2
+    y1 = -1 * r * np.cos(a1_rad) + screen_height/2
 
-x2 = r * np.sin(a2_rad) + screen_width/2
-y2 = -1 * r * np.cos(a2_rad) + screen_height/2
+    x2 = r * np.sin(a2_rad) + screen_width/2
+    y2 = -1 * r * np.cos(a2_rad) + screen_height/2
 
-if False:
-    # 2 player battle
-    player1 = PlayerShip(x1, y1, (a1-180) % 360)
-    if len(joysticks) > 1:    
-        controller1 = Controller(joysticks[0])
+    if False:
+        # 2 player battle
+        player1 = PlayerShip(x1, y1, (a1-180) % 360)
+        if len(joysticks) > 1:    
+            controller1 = Controller(joysticks[0])
 
-    player2 = PlayerShip(x2, y2, (a2-180) % 360)
-    if len(joysticks) > 2:
-        controller2 = Controller(joysticks[1])
+        player2 = PlayerShip(x2, y2, (a2-180) % 360)
+        if len(joysticks) > 2:
+            controller2 = Controller(joysticks[1])
 
-    players = [(player1,controller1,player2),(player2,controller2,player1)]
-else:
-    # 1 player vs AI
-    player1 = PlayerShip(x1, y1, (a1-180) % 360)
-    controller1 = Controller(None)
+        players = [(player1,controller1,player2),(player2,controller2,player1)]
+    else:
+        # 1 player vs AI
+        player1 = PlayerShip(x1, y1, (a1-180) % 360)
+        controller1 = Controller(None)
 
-    player2 = AIShip(x2, y2, (a2-180) % 360)
-    ai_controller = AI_Control()
+        player2 = AIShip(x2, y2, (a2-180) % 360)
+        ai_controller = AI_Control()
 
-    players = [(player1,controller1,player2),(player2,ai_controller,player1)]
+        players = [(player1,controller1,player2),(player2,ai_controller,player1)]
 
-#draw wind arrow
-wind_direction = 135
+    #draw wind arrow
+    wind_direction = 135
 
-wind_arrow = pygame.Surface((300,300), SRCALPHA, 32)
-wind_arrow = wind_arrow.convert_alpha()
-pygame.draw.polygon(wind_arrow, (0, 0, 0), ((0, 100), (0, 200), (200, 200), (200, 300), (300, 150), (200, 0), (200, 100)), width=0)
-wind_arrow = pygame.transform.rotate(wind_arrow, -wind_direction+90)
-wind_arrow = pygame.transform.scale(wind_arrow,(30,30))
+    wind_arrow = pygame.Surface((300,300), SRCALPHA, 32)
+    wind_arrow = wind_arrow.convert_alpha()
+    pygame.draw.polygon(wind_arrow, (0, 0, 0), ((0, 100), (0, 200), (200, 200), (200, 300), (300, 150), (200, 0), (200, 100)), width=0)
+    wind_arrow = pygame.transform.rotate(wind_arrow, -wind_direction+90)
+    wind_arrow = pygame.transform.scale(wind_arrow,(30,30))
 
-enemies = pygame.sprite.Group()
-all_sprites = pygame.sprite.Group()
-balls = pygame.sprite.Group()
+    enemies = pygame.sprite.Group()
+    all_sprites = pygame.sprite.Group()
+    balls = pygame.sprite.Group()
 
-running = True
+    running = True
 
-clock = pygame.time.Clock()
+    clock = pygame.time.Clock()
 
-while running:
-    for event in pygame.event.get():
-        if event.type == KEYDOWN:
-            if event.key == K_ESCAPE:
+    while running:
+        for event in pygame.event.get():
+            if event.type == KEYDOWN:
+                if event.key == K_ESCAPE:
+                    running = False
+            elif event.type == QUIT:
                 running = False
-        elif event.type == QUIT:
-            running = False
-    
-    for p,c,o in players:
-        if isinstance(c, Controller):
-            c.read_input()
-            
+        
+        for p,c,o in players:
+            if isinstance(c, Controller):
+                c.read_input()
+                
 
-    screen.blit(background, (0, 0))
-    pos = (screen.get_width()/2, screen.get_height()/2)
-    screen.blit(wind_arrow, (screen_width/2,0))
-    
-    #enemies.update()
-    balls.update()
+        screen.blit(background, (0, 0))
+        pos = (screen.get_width()/2, screen.get_height()/2)
+        screen.blit(wind_arrow, (screen_width/2,0))
+        
+        #enemies.update()
+        balls.update()
 
-    for entity in all_sprites:
-        screen.blit(entity.image, entity.rect)
+        for entity in all_sprites:
+            screen.blit(entity.image, entity.rect)
 
-    for i,(p,c,o) in enumerate(players):
-        if isinstance(c, Controller):
-            pressed_keys = c.pressed_keys
-        else:
-            pressed_keys = []
-        p.update(pressed_keys,screen,opponent=o)
-        #Display Ship Stats
-        if i == 0:
-            player_stats(p,1,'left')
-        else:
-            player_stats(p,2,'right')
-        pygame.draw.rect(screen, (255, 0, 0), (*p.rect.topleft, *p.image.get_size()),2)
-        if pygame.sprite.spritecollideany(p, balls):
-            p.hit()
+        for i,(p,c,o) in enumerate(players):
+            if isinstance(c, Controller):
+                pressed_keys = c.pressed_keys
+            else:
+                pressed_keys = []
+            p.update(pressed_keys,screen,opponent=o)
+            #Display Ship Stats
+            if i == 0:
+                player_stats(screen,p,1,'left')
+            else:
+                player_stats(screen,p,2,'right')
+            pygame.draw.rect(screen, (255, 0, 0), (*p.rect.topleft, *p.image.get_size()),2)
+            if pygame.sprite.spritecollideany(p, balls):
+                p.hit()
 
-    pygame.display.flip()
+        pygame.display.flip()
 
-    clock.tick(60)
+        clock.tick(60)
 
-pygame.quit()
+if __name__ == '__main__':
+    main()
