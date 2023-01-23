@@ -2,6 +2,7 @@ import pygame
 import random
 import numpy as np
 from pygame.locals import *
+import math
 
 width_buffer = 100
 height_buffer = 0
@@ -12,7 +13,7 @@ screen_height = 768
 class PlayerShip(pygame.sprite.Sprite):
     def __init__(self, x0, y0, angle):
         super(PlayerShip, self).__init__()
-        image = pygame.image.load('ship.png').convert()
+        image = pygame.image.load('images/ship.png').convert()
 
         image = pygame.transform.rotate(image, -90)
         image.set_colorkey((255, 255, 255), RLEACCEL)
@@ -203,13 +204,33 @@ class Controller():
                 self.pressed_keys[k] = keys[v]
 
 class AIShip(PlayerShip):
+    def __init__(self, x0, y0, angle):
+        super().__init__(x0, y0, angle)
+        self.turn_dir = 0
+
     def update(self, pressed_keys, screen, opponent=None):
 
         a = 0.05
 
+        #Constant Speed
         v = self.speed + a
-        self.speed = min(v,self.hull_speed)
-        self.aoa = 0
+        dx = screen_width/2 - self.x
+        dy = screen_height/2 - self.y
+        distance = (dx**2+dy**2)**0.5
+        angle = np.arctan2(dy,dx)
+
+        self.speed = min(v,self.hull_speed/2)
+
+        # Turn about the center
+        #print(np.arctan2(dy,dx)*180/math.pi)
+        print(angle*180/math.pi)
+        if distance < 100:
+            if self.turn_dir == 0:
+                self.turn_dir = np.sign(angle)
+
+        self.aoa += self.turn_dir * self.speed*60/(200)
+
+        self.aoa = self.aoa % 360
 
         ship_rad = np.radians(self.aoa)
         x = self.x + self.speed * np.sin(ship_rad)
@@ -308,7 +329,7 @@ def main():
         player1 = PlayerShip(x1, y1, (a1-180) % 360)
         controller1 = Controller(None)
 
-        player2 = AIShip(x2, y2, (a2-180) % 360)
+        player2 = AIShip(x2, y2, (a2-180) % 360 + 10)
         ai_controller = AI_Control()
 
         players = [(player1,controller1,player2),(player2,ai_controller,player1)]
