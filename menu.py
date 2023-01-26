@@ -1,12 +1,11 @@
 import pygame
 import pygame_menu
-import sys
 import pygame.mixer as mixer
 from pygame_menu import sound
-from ship_battle import main as ship_battle 
+from ship_battle import main as ship_battle
+from tile_map import main as tile_map 
 
 res = (1024,768)
-
 pygame.init()
 screen = pygame.display.set_mode(res)
 
@@ -16,30 +15,34 @@ color_dark = (100,100,100)
 width = screen.get_width()
 height = screen.get_height()
 
+global NUM_PLAYERS
+
 def set_number_of_players(value, players):
     NUM_PLAYERS = value
-    global NUM_PLAYERS
 
 def start_the_game():
     pygame.mixer.music.stop()
-    # Run game
-    mixer.music.play(loops=-1)
+    tile_map()
+    menu_music()
 
 def start_ship_battle():
     pygame.mixer.music.stop()
     ship_battle()
-    mixer.music.play(loops=-1)
+    menu_music()
 
 def game_credits():
     pass
+
+def menu_music():
+    mixer.music.load("music/intro.mp3")
+    mixer.music.set_volume(0.7)
+    mixer.music.play(loops=-1)
 
 pirate_font = pygame.font.Font("font/TradeWinds-Regular.ttf", 36)
 
 # Play Intro Music
 mixer.init()
-mixer.music.load("music/intro.mp3")
-mixer.music.set_volume(0.7)
-mixer.music.play(loops=-1)
+menu_music()
 
 # Sounds
 menu_sound = sound.Sound()
@@ -65,8 +68,8 @@ menu = pygame_menu.Menu('', width, height, theme=game_theme)
 
 menu.set_sound(menu_sound, recursive=True)
 
-menu.add.selector('Players :', [('1', 1), ('2', 2), ('3', 3), ('4', 4)], onchange=set_number_of_players)
 menu.add.button('Play Game', start_the_game)
+menu.add.selector('Players :', [('1', 1), ('2', 2), ('3', 3), ('4', 4)], onchange=set_number_of_players)
 menu.add.button('Ship Battle', start_ship_battle)
 menu.add.button('Credits', game_credits)
 menu.add.button('Quit', pygame_menu.events.EXIT)
