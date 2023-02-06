@@ -3,6 +3,7 @@ import random
 import numpy as np
 from pygame.locals import *
 import pygame.mixer as mixer
+from polar_diagram import VMAX, VMAX_RAD
 
 width_buffer = 100
 height_buffer = 0
@@ -28,11 +29,16 @@ cannon_fire_smoke = pygame.transform.rotate(cannon_fire_smoke, 0)
 cannon_fire_explo = pygame.image.load('images/explosion.png')
 cannon_fire_explo = pygame.transform.scale(cannon_fire_explo, (42,28))
 
+ocean_view = pygame.image.load('images/ocean_view.png')
+
+#draw wind arrow
+WIND_DIRECTION = np.random.randint(360)
+
 class PlayerShip(pygame.sprite.Sprite):
     def __init__(self, x0, y0, angle, name):
-        super(PlayerShip, self).__init__()
-        image = pygame.image.load('images/ship.png').convert()
+        pygame.sprite.Sprite.__init__(self)
 
+        image = pygame.image.load('images/ship_v2.png').convert()
         image = pygame.transform.rotate(image, -90)
         image.set_colorkey((255, 255, 255), RLEACCEL)
         self.image_original = image
@@ -46,24 +52,30 @@ class PlayerShip(pygame.sprite.Sprite):
         self.starboard_shoot = 0
         self.name = name
 
-
         # Ship Properties
-        self.hull = 5
+        self.hull = 10
         self.hull_speed = 1.
+        self.guns = 3
+        self.gun_sep = 33/self.guns
         self.speed = 0
         self.aoa = angle
-        self.reload_time = 60*60
+        self.reload_time = 3*60*60
+        self.sail_area = 0.5
 
         self.rotate(self.aoa)
 
     def shoot(self,shoot_angle):
-        ball = CanonBall(self.x,self.y,self.aoa-shoot_angle,self.name)
-        smoke = Smoke(self.x,self.y,self.aoa-shoot_angle)
-        sound_cannon_fire.play()
-        ball.update()
-        smoke.update()
-        ball.add(CANNON_BALLS)
-        smoke.add(SMOKE)
+        for g in range(self.guns):
+            x_pos = self.x + self.gun_sep * g * np.sin(self.aoa)
+            y_pos = self.y - self.gun_sep * g * np.cos(self.aoa)
+
+            ball = CanonBall(x_pos,y_pos,self.aoa-shoot_angle,self.name)
+            smoke = Smoke(x_pos,y_pos,self.aoa-shoot_angle)
+            sound_cannon_fire.play()
+            ball.update()
+            smoke.update()
+            ball.add(CANNON_BALLS)
+            smoke.add(SMOKE)
 
     def hit(self, ball):
         sound_cannon_hit.play()
@@ -71,13 +83,12 @@ class PlayerShip(pygame.sprite.Sprite):
         explosion.update()
         explosion.add(EXPLO)
 
-        if self.hull > 1:
-            self.hull -= 1
-        else:
-            self.hull = 0
+        self.hull -= 1
+        ball.kill()
+
+        if self.hull <= 0:    
             self.kill()
 
-        ball.kill()
 
     def rotate(self,angle):
         # rotate image of boat
@@ -96,11 +107,12 @@ class PlayerShip(pygame.sprite.Sprite):
 
         return rotated_image,rotated_image_rect
 
-    def update(self, pressed_keys, screen, opponent=None):
+    def wind_effect(self,theta):
+        wind_dir = np.deg2rad(WIND_DIRECTION-180)
+        vmg = np.interp(theta-wind_dir,VMAX_RAD-wind_dir,VMAX)
+        return vmg 
 
-        # set wind conditions
-        a=0.05
-        aoa = self.aoa
+    def update(self, pressed_keys, screen):
 
         # fire cannons
         if pressed_keys["L"]:
@@ -114,21 +126,32 @@ class PlayerShip(pygame.sprite.Sprite):
                 self.starboard_shoot = pygame.time.get_ticks()
 
         # control movement
-
         if pressed_keys["UP"]:
-            v = self.speed + a
-            self.speed = min(v,self.hull_speed)
+            self.sail_area += 0.05
         if pressed_keys["DOWN"]:
-            s = self.speed - 0.1
-            self.speed = max(s,0)
+            self.sail_area -= 0.05
         if pressed_keys["LEFT"]:
-            aoa -= 1.0
+            self.aoa -= 0.5
         if pressed_keys["RIGHT"]:
-            aoa += 1.0
-
-        self.aoa = aoa % 360
+            self.aoa += 0.5 
 
         ship_rad = np.radians(self.aoa)
+
+        self.sail_area = max(min(self.sail_area,1.0),0)
+        
+        r = self.wind_effect(ship_rad)
+        print(r)
+        
+        # sail speed
+        self.speed += 0.25*(r-self.speed) * self.sail_area
+
+        self.speed = max(min(self.speed,self.hull_speed),0)
+
+        # drag
+        self.speed -= 0.03
+
+        self.aoa = self.aoa % 360
+
         x = self.x + self.speed * np.sin(ship_rad)
         y = self.y - self.speed * np.cos(ship_rad)
 
@@ -163,7 +186,7 @@ class Smoke(pygame.sprite.Sprite):
         self.rect = self.image_original.get_rect()
         self.x = x0 + 25 * np.sin(radians)
         self.y = y0 - 25 * np.cos(radians)
-        self.alpha = 225
+        self.alpha = 255
         self.size = self.image_original.get_size()
         self.angle = angle
 
@@ -202,12 +225,12 @@ class Explosion(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self,SMOKE)
         self.image = cannon_fire_explo
         self.rect = (x0,y0)
-        self.alpha = 225
+        self.alpha = 255
 
         #FIXME: use angle to put explosion into ship
 
     def update(self):
-        self.alpha = max(0, self.alpha-5)  # alpha should never be < 0.
+        self.alpha = max(0, self.alpha-3)  # alpha should never be < 0.
         self.image.fill((255, 255, 255, self.alpha), special_flags=pygame.BLEND_RGBA_MULT)     
         if self.alpha <= 0:  # Kill the sprite when the alpha is <= 0.
             self.kill()   
@@ -386,8 +409,9 @@ def main():
     screen = pygame.display.set_mode((screen_width, screen_height))
 
     #background
-    background = pygame.Surface(screen.get_size())
-    background.fill((0, 154, 255))
+    #background = pygame.Surface(screen.get_size())
+    #background.fill((0, 154, 255))
+    screen.blit(ocean_view,(width_buffer,0))
 
     # create players
     pygame.joystick.init()
@@ -428,13 +452,10 @@ def main():
 
         players = [(player1,controller1,player2),(player2,ai_controller,player1)]
 
-    #draw wind arrow
-    wind_direction = 135
-
     wind_arrow = pygame.Surface((300,300), SRCALPHA, 32)
     wind_arrow = wind_arrow.convert_alpha()
     pygame.draw.polygon(wind_arrow, (0, 0, 0), ((0, 100), (0, 200), (200, 200), (200, 300), (300, 150), (200, 0), (200, 100)), width=0)
-    wind_arrow = pygame.transform.rotate(wind_arrow, -wind_direction+90)
+    wind_arrow = pygame.transform.rotate(wind_arrow, -WIND_DIRECTION+90)
     wind_arrow = pygame.transform.scale(wind_arrow,(30,30))
 
     running = True
@@ -454,7 +475,7 @@ def main():
                 c.read_input()
                 
 
-        screen.blit(background, (0, 0))
+        screen.blit(ocean_view, (width_buffer, 0))
         screen.blit(wind_arrow, (screen_width/2,0))
 
         for i,(p,c,o) in enumerate(players):
@@ -462,13 +483,13 @@ def main():
                 pressed_keys = c.pressed_keys
             else:
                 pressed_keys = []
-            p.update(pressed_keys,screen,opponent=o)
+            p.update(pressed_keys,screen)
             #Display Ship Stats
             if i == 0:
                 player_stats(screen,p,1,'left')
             else:
                 player_stats(screen,p,2,'right')
-            pygame.draw.rect(screen, (255, 0, 0), (*p.rect.topleft, *p.image.get_size()),2)
+        
             if pygame.sprite.spritecollideany(p, CANNON_BALLS):
                 hitting_balls = pygame.sprite.spritecollide(p, CANNON_BALLS, False, collided=pygame.sprite.collide_mask)
                 if any([p.name != b.name for b in hitting_balls]):
