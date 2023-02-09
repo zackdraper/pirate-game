@@ -4,6 +4,7 @@ import numpy as np
 from pygame.locals import *
 import pygame.mixer as mixer
 from polar_diagram import VMAX, VMAX_RAD
+from captains import CAPTAINS, EMPIRE_CAPTAINS
 
 width_buffer = 100
 height_buffer = 0
@@ -33,9 +34,11 @@ ocean_view = pygame.image.load('images/ocean_view.png')
 
 #draw wind arrow
 WIND_DIRECTION = np.random.randint(360)
+VMAX[VMAX<0.03] = -0.03
+_VMAX = np.roll(VMAX,int(np.deg2rad(WIND_DIRECTION-180)/VMAX_RAD[1]-VMAX_RAD[0]))
 
 class PlayerShip(pygame.sprite.Sprite):
-    def __init__(self, x0, y0, angle, name):
+    def __init__(self, x0, y0, angle, name, captain=None, guns=3):
         pygame.sprite.Sprite.__init__(self)
 
         image = pygame.image.load('images/ship_v2.png').convert()
@@ -48,18 +51,19 @@ class PlayerShip(pygame.sprite.Sprite):
         self.x = x0
         self.y = y0
         self.size = self.image.get_size()
-        self.port_shoot = 0
-        self.starboard_shoot = 0
         self.name = name
+        self.captain = captain
 
         # Ship Properties
-        self.hull = 10
+        self.hull = 9
         self.hull_speed = 1.
-        self.guns = 3
+        self.guns = guns
         self.gun_sep = 33/self.guns
         self.speed = 0
         self.aoa = angle
         self.reload_time = 3*60*60
+        self.port_shoot = pygame.time.get_ticks() - self.reload_time
+        self.starboard_shoot = pygame.time.get_ticks() - self.reload_time
         self.sail_area = 0.5
 
         self.rotate(self.aoa)
@@ -108,8 +112,7 @@ class PlayerShip(pygame.sprite.Sprite):
         return rotated_image,rotated_image_rect
 
     def wind_effect(self,theta):
-        wind_dir = np.deg2rad(WIND_DIRECTION-180)
-        vmg = np.interp(theta-wind_dir,VMAX_RAD-wind_dir,VMAX)
+        vmg = self.hull_speed * np.interp(theta,VMAX_RAD,_VMAX)
         return vmg 
 
     def update(self, pressed_keys, screen):
@@ -127,28 +130,26 @@ class PlayerShip(pygame.sprite.Sprite):
 
         # control movement
         if pressed_keys["UP"]:
-            self.sail_area += 0.05
+            self.sail_area += 0.025
         if pressed_keys["DOWN"]:
-            self.sail_area -= 0.05
+            self.sail_area -= 0.025
         if pressed_keys["LEFT"]:
-            self.aoa -= 0.5
+            self.aoa -= max(0.05,0.5 * self.speed)
         if pressed_keys["RIGHT"]:
-            self.aoa += 0.5 
+            self.aoa += max(0.5,0.5 * self.speed)
 
         ship_rad = np.radians(self.aoa)
 
         self.sail_area = max(min(self.sail_area,1.0),0)
         
         r = self.wind_effect(ship_rad)
-        print(r)
         
         # sail speed
-        self.speed += 0.25*(r-self.speed) * self.sail_area
+        self.speed += 0.01 * ((r * self.sail_area)-self.speed) 
+        print(self.speed,r)
 
-        self.speed = max(min(self.speed,self.hull_speed),0)
-
-        # drag
-        self.speed -= 0.03
+        self.speed = max(min(self.speed*self.hull_speed,self.hull_speed),-0.03)
+        
 
         self.aoa = self.aoa % 360
 
@@ -321,8 +322,8 @@ class Controller():
                 self.pressed_keys[k] = keys[v]
 
 class AIShip(PlayerShip):
-    def __init__(self, x0, y0, angle, name):
-        super().__init__(x0, y0, angle, name)
+    def __init__(self, x0, y0, angle, name, captain=None, guns=3):
+        super().__init__(x0, y0, angle, name, captain=captain, guns=guns)
         self.turn_dir = 0
 
     def update(self, pressed_keys, screen, opponent=None):
@@ -379,27 +380,70 @@ class AIShip(PlayerShip):
 class AI_Control():
     pass
 
+plank_img = pygame.image.load('images/plank.png')
+cannon_img = pygame.image.load('images/cannon.png')
+sail_area_full = pygame.image.load('images/sail_area_full.png')
+sail_area_2_3 = pygame.image.load('images/sail_area_2_3.png')
+sail_area_1_3 = pygame.image.load('images/sail_area_1_3.png')
+sail_area_0_3 = pygame.image.load('images/sail_area_0_3.png')
+
 def player_stats(screen,PlayerShip,num,side):
+
+    if side == 'right':
+        x = screen_width-100
+    else:
+        x = 0
+
+    pygame.draw.rect(screen,(0,0,0),pygame.Rect(x,0,width_buffer,screen_height))
+
+    font = pygame.font.Font('freesansbold.ttf', 18)
+
+    name = PlayerShip.captain.name
+    name = font.render(name, True, (255,255,255), (0,0,0))
+
+    flag = PlayerShip.captain.flag
+
+    screen.blit(name, (x,100))
+    screen.blit(flag, (x,25))
+
+    if PlayerShip.sail_area < 0.1:
+        screen.blit(sail_area_0_3, (x+20,135))
+    elif PlayerShip.sail_area <= 0.45:
+        screen.blit(sail_area_1_3, (x+20,135))
+    elif PlayerShip.sail_area < 0.9:
+        screen.blit(sail_area_2_3, (x+20,135))
+    else:
+        screen.blit(sail_area_full, (x+20,135))
+
+    if ((pygame.time.get_ticks() - PlayerShip.port_shoot) > PlayerShip.reload_time):
+        screen.blit(cannon_img, (x+5,235))
+
+    if ((pygame.time.get_ticks() - PlayerShip.starboard_shoot) > PlayerShip.reload_time):
+        screen.blit(cannon_img, (x+55,235))
+    
+    for i in np.arange(PlayerShip.hull):
+        screen.blit(plank_img, ((x + 45 - 35 * int(i % 2)-1 ), 285 + 15 * i - 15*int(i % 2)))
 
     strings = [
         "Player: "+str(int(num)),
         "Hull: % 1.0f" % PlayerShip.hull,
         "Knts: % 2.2f" % PlayerShip.speed,
         "AOA: % 3.0f" % PlayerShip.aoa,
+        "SA: % 1.2f" % PlayerShip.sail_area,
     ]
 
-    font = pygame.font.Font('freesansbold.ttf', 24)
+    font = pygame.font.Font('freesansbold.ttf', 18)
     
     if side == 'right':
         for dy,s in enumerate(strings):
             stat = font.render(s, True, (255,255,255), (0,0,0))
-            screen.blit(stat, (screen_width-150,dy*25))
+            screen.blit(stat, (screen_width-150,600+dy*25))
     else:
         for dy,s in enumerate(strings):
             stat = font.render(s, True, (255,255,255), (0,0,0))
-            screen.blit(stat, (0,dy*25))
+            screen.blit(stat, (0,600+dy*25))
 
-def main():
+def main(Ship1,Ship2):
     pygame.display.set_caption('Ship Battle')
 
     # initialize pygame
@@ -444,13 +488,13 @@ def main():
         players = [(player1,controller1,player2),(player2,controller2,player1)]
     else:
         # 1 player vs AI
-        player1 = PlayerShip(x1, y1, (a1-180) % 360, 'Name')
+        player1 = PlayerShip(x1, y1, (a1-180) % 360, 'Name', captain=Ship1['captain'], guns=Ship1['guns'])
         controller1 = Controller(None)
 
-        player2 = AIShip(x2, y2, (a2-180) % 360 + 10, 'Name2')
+        player2 = AIShip(x2, y2, (a2-180) % 360 + 10, 'Name2', captain=Ship2['captain'], guns=Ship2['guns'])
         ai_controller = AI_Control()
 
-        players = [(player1,controller1,player2),(player2,ai_controller,player1)]
+        players = [(player1,controller1),(player2,ai_controller)]
 
     wind_arrow = pygame.Surface((300,300), SRCALPHA, 32)
     wind_arrow = wind_arrow.convert_alpha()
@@ -470,7 +514,7 @@ def main():
             elif event.type == QUIT:
                 running = False
         
-        for p,c,o in players:
+        for p,c in players:
             if isinstance(c, Controller):
                 c.read_input()
                 
@@ -478,7 +522,7 @@ def main():
         screen.blit(ocean_view, (width_buffer, 0))
         screen.blit(wind_arrow, (screen_width/2,0))
 
-        for i,(p,c,o) in enumerate(players):
+        for i,(p,c) in enumerate(players):
             if isinstance(c, Controller):
                 pressed_keys = c.pressed_keys
             else:
@@ -494,7 +538,7 @@ def main():
                 hitting_balls = pygame.sprite.spritecollide(p, CANNON_BALLS, False, collided=pygame.sprite.collide_mask)
                 if any([p.name != b.name for b in hitting_balls]):
                     for b in hitting_balls:
-                        o.hit(b) 
+                        p.hit(b)
 
         CANNON_BALLS.update()
         CANNON_BALLS.draw(screen)
@@ -509,5 +553,10 @@ def main():
 
         clock.tick(60)
 
+        if player1.hull <= 0 or player2.hull <= 0:
+            running = False
+
+    return (player1.hull <= 0)
+
 if __name__ == '__main__':
-    main()
+    main({'captain':CAPTAINS[0],'guns':3},{'captain':EMPIRE_CAPTAINS['ENGLISH'],'guns':3})

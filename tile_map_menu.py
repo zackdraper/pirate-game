@@ -33,7 +33,7 @@ def display_message(screen,key,input_str):
     screen.blit(message_menu_img,(width/2-message_size[0]/2,height/2-message_size[1]/2))
 
     if image:
-        message_img = pygame.image.load(image)
+        mesage_img = pygame.image.load(image)
         message_img = pygame.transform.scale(message_img,(message_size[0]-100,message_size[1]/2-50))
         screen.blit(message_img,(width/2-message_size[0]/2+50,height/2-message_size[1]/2+100))
 
@@ -236,9 +236,9 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
                 
         elif selected == 50:
             if selected_row == 0:
-                exec_naval_action(ship)
+                exec_naval_action(ship,selected_empire_naval_action)
             elif selected_row == 1:
-                run_from_naval_action(ship)
+                run_from_naval_action(ship,selected_empire_naval_action)
             selected = 0
 
         else:

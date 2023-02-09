@@ -1,4 +1,5 @@
 import pygame
+from empires import EMPIRES
 
 _CAPTAINS = ['Black Sam','Calico Jack','Stede Bonnet','Edward Low']
 
@@ -10,10 +11,15 @@ captain_flag = {
 }
 
 class Captain():
-    def __init__(self,name) -> None:
+    def __init__(self,name,flag) -> None:
         self.name = name
-        self.flag = captain_flag[self.name]
+        self.flag = flag
         self.flag_small = pygame.transform.scale(self.flag,(45,30))
         self.pirate_status = []
 
-CAPTAINS = [Captain(c) for c in _CAPTAINS]
+CAPTAINS = [Captain(c,captain_flag[c]) for c in _CAPTAINS]
+
+EMPIRE_CAPTAINS = {}
+
+for k,e in EMPIRES.items():
+    EMPIRE_CAPTAINS[k] = Captain(e.name,e.flag)

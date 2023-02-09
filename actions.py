@@ -3,6 +3,8 @@ from ports import PORTS
 from empires import _EMPIRES
 import numpy as np
 import random
+from ship_battle import main as ship_battle
+from captains import EMPIRE_CAPTAINS
 
 empire_square_prob = {}
 for e in _EMPIRES:
@@ -27,12 +29,14 @@ def select_empire(x,y):
     return choice[0]
 
         
-def exec_naval_action(ship):
-    print('engage')
-    print(SQUARE_PROB[(ship.posx,ship.posy)])
-    pass
+def exec_naval_action(ship,empire):
+    victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
+    if victory:
+        ship.vp += 1
 
 
-def run_from_naval_action(ship):
-    print('run')
-    pass
+def run_from_naval_action(ship,empire):
+    if empire in ship.captain.pirate_status:
+        victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
+        if victory:
+            ship.vp += 1

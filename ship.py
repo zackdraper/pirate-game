@@ -8,6 +8,9 @@ from init import PADLEFTRIGHT,PADTOPBOTTOM,height,width,divisions_x,divisions_y
 sloop_sprite = SpriteSheet('images/sloop_map_sprite_v2.png')
 sloop_images = sloop_sprite.load_strip((0,0,40,40), 6, colorkey=-1)
 
+galleon_sprite = SpriteSheet('images/sloop_map_sprite_v2.png')
+galleon_images = galleon_sprite.load_strip((0,0,40,40), 6, colorkey=-1)
+
 def screen_pos(x,y):
     # Get cell size
     horizontal_cellsize = (width - (PADLEFTRIGHT*2))/divisions_x
@@ -17,10 +20,12 @@ def screen_pos(x,y):
 
 SHIP_CLASS_SPRITES = {
     'Sloop':sloop_images,
+    'Galleon':galleon_images,
 }
 
 SHIP_CLASS_CP = {
     'Sloop':3,
+    'Galleon':6,
 }
 
 mixer.init()
@@ -45,6 +50,7 @@ class Ship:
         self.vp = 0
         self.cargo_capacity = SHIP_CLASS_CP[self.ship_class]
         self.captain = captain
+        self.guns = 3
 
     def move(self,pressed_keys):
         x = self.posx

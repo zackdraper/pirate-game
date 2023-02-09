@@ -70,6 +70,7 @@ def display_static_screen(screen,TURN_COUNT):
     screen.blit(surface,(0,height - (PADTOPBOTTOM-5)))
 
     font = pygame.font.Font('font/TradeWinds-Regular.ttf', 18)
+    font2 = pygame.font.Font('font/TradeWinds-Regular.ttf', 32)
 
     padleft = 10
     padtop = height - (PADTOPBOTTOM-5)
@@ -82,7 +83,10 @@ def display_static_screen(screen,TURN_COUNT):
         screen.blit(empire.flag_small,(padleft+150+240*(x),padtop+5+33*(y)))
 
     text = font.render("Turns: "+str(TURN_COUNT),True,(255,255,255))
-    screen.blit(text,(width/2,padtop))
+    screen.blit(text,(width/2,padtop+40))
+
+    text = font2.render("Black Flag",True,(255,255,255))
+    screen.blit(text,(width/2-50,padtop))
     
 
 def display_ship_stats(screen,ship):
@@ -116,7 +120,7 @@ def display_ship_stats(screen,ship):
     screen.blit(ship_text,(width-350,35))
 
 
-def main():
+def main(NUM_PLAYERS=1,SOUND_ON=True):
     pygame.display.set_caption('Pirate Game')
 
     # initialize pygame
@@ -149,13 +153,15 @@ def main():
         (Controller(None),Ship(CAPTAINS[3])),
     ]
 
-    NUM_PLAYERS = 4
+    #NUM_PLAYERS = 4
     PLAYER_SELECT = 1
     TURN_COUNT = 1
     selected_row = 0
     selected_empire_naval_action = None
 
     while running:
+
+        controller,player_ship = players[PLAYER_SELECT-1]
 
         # Next Turn
         if player_ship.map_moves <= 0:
@@ -165,8 +171,6 @@ def main():
             if PLAYER_SELECT > NUM_PLAYERS:
                 TURN_COUNT += 1
                 PLAYER_SELECT = 1
-
-        controller,player_ship = players[PLAYER_SELECT-1]
 
         screen.blit(bg, (0,0))
 

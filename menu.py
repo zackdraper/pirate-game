@@ -15,14 +15,18 @@ color_dark = (100,100,100)
 width = screen.get_width()
 height = screen.get_height()
 
-global NUM_PLAYERS
+NUM_PLAYERS = 1
+SOUND_ON = True
 
 def set_number_of_players(value, players):
     NUM_PLAYERS = value
 
+def set_sound(value):
+    SOUND_ON = value
+
 def start_the_game():
     pygame.mixer.music.stop()
-    tile_map()
+    tile_map(NUM_PLAYERS=NUM_PLAYERS,SOUND_ON=SOUND_ON)
     menu_music()
 
 def start_ship_battle():
@@ -64,12 +68,16 @@ game_theme.widget_font_shadow_color = (0, 0, 0)
 game_theme.widget_font_shadow_offset = 1
 game_theme.widget_font_size = 36
 game_theme.widget_offset = (0.0, 0.35)
+
+submenu = pygame_menu.Menu('', width, height, theme=game_theme)
+submenu.add.button('Back',pygame_menu.events.RESET)
+submenu.add.selector('Players :', [('1', 1), ('2', 2), ('3', 3), ('4', 4)], onchange=set_number_of_players)
+submenu.add.selector('Sound :', [('On', True), ('Off', False)], onchange=set_sound)
+submenu.add.button('Start',start_the_game)
+
 menu = pygame_menu.Menu('', width, height, theme=game_theme)
-
 menu.set_sound(menu_sound, recursive=True)
-
-menu.add.button('Play Game', start_the_game)
-menu.add.selector('Players :', [('1', 1), ('2', 2), ('3', 3), ('4', 4)], onchange=set_number_of_players)
+menu.add.button('Play Game', submenu)
 menu.add.button('Ship Battle', start_ship_battle)
 menu.add.button('Credits', game_credits)
 menu.add.button('Quit', pygame_menu.events.EXIT)
