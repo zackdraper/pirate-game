@@ -75,7 +75,10 @@ def display_static_screen(screen,TURN_COUNT):
     padleft = 10
     padtop = height - (PADTOPBOTTOM-5)
 
-    for i,empire in enumerate(list(EMPIRES.values())):
+    empires_display = list(EMPIRES.keys())
+    empires_display.remove('PIRATES')
+    for i,e in enumerate(empires_display):
+        empire = EMPIRES[e]
         y = [0,1][floor(i/2)]
         x = [0,1][(i+1) % 2]
         ship_text = font.render(empire.long_name,True,empire.color)
@@ -144,7 +147,7 @@ def main(NUM_PLAYERS=1,SOUND_ON=True):
     message = ""
     input_str = ""
 
-    CAPTAINS[0].pirate_status = ["SPANISH","ENGLISH","DUTCH","FRENCH"]
+    #CAPTAINS[0].pirate_status = ["SPANISH","ENGLISH","DUTCH","FRENCH"]
 
     players = [
         (Controller(None),Ship(CAPTAINS[0])),
@@ -190,7 +193,14 @@ def main(NUM_PLAYERS=1,SOUND_ON=True):
                     elif pressed_keys['B'] or pressed_keys ['Y']:
                         selected = True
                         selected_row = 0
+                elif selected in [50]:
+                    # Force a selection to resolve
+                    if any([pressed_keys[key] for key in ['UP','DOWN','LEFT','RIGHT']]):
+                        selected_row = menu_move(pressed_keys,selected_row)
+                    elif pressed_keys['B'] or pressed_keys['Y']:
+                        execute_menu = True
                 elif selected >= 1:
+                    # Allow a key to back out
                     if any([pressed_keys[key] for key in ['UP','DOWN','LEFT','RIGHT']]):
                         selected_row = menu_move(pressed_keys,selected_row)
                     elif pressed_keys['A'] or pressed_keys['X']:

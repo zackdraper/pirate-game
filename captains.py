@@ -10,6 +10,8 @@ captain_flag = {
     'Edward Low':pygame.image.load('images/flags/pirate_flag4.png'),
 }
 
+generic_pirate_flag = pygame.image.load('images/flags/pirate_flag5.png')
+
 class Captain():
     def __init__(self,name,flag) -> None:
         self.name = name
@@ -23,3 +25,5 @@ EMPIRE_CAPTAINS = {}
 
 for k,e in EMPIRES.items():
     EMPIRE_CAPTAINS[k] = Captain(e.name,e.flag)
+
+EMPIRE_CAPTAINS['PIRATES'] = Captain('PIRATES',generic_pirate_flag)

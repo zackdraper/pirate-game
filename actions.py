@@ -7,8 +7,8 @@ from ship_battle import main as ship_battle
 from captains import EMPIRE_CAPTAINS
 
 empire_square_prob = {}
-for e in _EMPIRES:
-    empire_square_prob[e] = 0.1
+for e in _EMPIRES + ['PIRATES']:
+    empire_square_prob[e] = 0.25
 
 SQUARE_PROB = {}
 for x in np.arange(divisions_x):
@@ -29,14 +29,15 @@ def select_empire(x,y):
     return choice[0]
 
         
-def exec_naval_action(ship,empire):
+def exec_naval_action(ship,empire):   
+    victory = None
     victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
-    if victory:
-        ship.vp += 1
+    return victory
 
 
 def run_from_naval_action(ship,empire):
-    if empire in ship.captain.pirate_status:
+    # pirate status forces an encounter, or a pirate on merchant forces encounter
+    victory = None
+    if (empire in ship.captain.pirate_status) or ((len(ship.captain.pirate_status) == 0) and (empire == 'PIRATES')):
         victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
-        if victory:
-            ship.vp += 1
+    return victory

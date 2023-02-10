@@ -6,7 +6,7 @@ import pygame.mixer as mixer
 from polar_diagram import VMAX, VMAX_RAD
 from captains import CAPTAINS, EMPIRE_CAPTAINS
 
-width_buffer = 100
+width_buffer = 105
 height_buffer = 0
 
 screen_width = 1024
@@ -146,7 +146,6 @@ class PlayerShip(pygame.sprite.Sprite):
         
         # sail speed
         self.speed += 0.01 * ((r * self.sail_area)-self.speed) 
-        print(self.speed,r)
 
         self.speed = max(min(self.speed*self.hull_speed,self.hull_speed),-0.03)
         
@@ -416,14 +415,15 @@ def player_stats(screen,PlayerShip,num,side):
         screen.blit(sail_area_full, (x+20,135))
 
     if ((pygame.time.get_ticks() - PlayerShip.port_shoot) > PlayerShip.reload_time):
-        screen.blit(cannon_img, (x+5,235))
+        screen.blit(cannon_img, (x+10,235))
 
     if ((pygame.time.get_ticks() - PlayerShip.starboard_shoot) > PlayerShip.reload_time):
-        screen.blit(cannon_img, (x+55,235))
+        screen.blit(cannon_img, (x+60,235))
     
     for i in np.arange(PlayerShip.hull):
-        screen.blit(plank_img, ((x + 45 - 35 * int(i % 2)-1 ), 285 + 15 * i - 15*int(i % 2)))
+        screen.blit(plank_img, ((x + 50 - 35 * int(i % 2)-1 ), 285 + 20 * i - 20*int(i % 2)))
 
+    '''
     strings = [
         "Player: "+str(int(num)),
         "Hull: % 1.0f" % PlayerShip.hull,
@@ -442,6 +442,7 @@ def player_stats(screen,PlayerShip,num,side):
         for dy,s in enumerate(strings):
             stat = font.render(s, True, (255,255,255), (0,0,0))
             screen.blit(stat, (0,600+dy*25))
+    '''
 
 def main(Ship1,Ship2):
     pygame.display.set_caption('Ship Battle')
@@ -556,7 +557,7 @@ def main(Ship1,Ship2):
         if player1.hull <= 0 or player2.hull <= 0:
             running = False
 
-    return (player1.hull <= 0)
+    return (player2.hull <= 0)
 
 if __name__ == '__main__':
     main({'captain':CAPTAINS[0],'guns':3},{'captain':EMPIRE_CAPTAINS['ENGLISH'],'guns':3})

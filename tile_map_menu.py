@@ -1,7 +1,7 @@
 import pygame
 from text_wrap import render_textrect
 import numpy as np
-from ports import PORTS
+from ports import PORTS, goods
 from actions import exec_naval_action, run_from_naval_action
 import random
 from init import width, height
@@ -23,6 +23,9 @@ MESSAGES = {
     "out_of_moves":("Avast!\n The crew be too tired to go on. End your turn.",None),
     "naval_encounter":("Sail Ho!\n Ship on the horizon, shall we engage?","images/ship_on_horizon.png"),
     "nothing_found":("Nothing has turned up Captain...","images/no_port.png"),
+    "victory":("Victory!\n You won the battle and gained a VP.\n You looted {0} pieces of eight and {1}",None),
+    "lost":("You lost the battle and barely escape with your life!\n Goods are confiscated or lost.",None),
+    "honor_among_thieves":("Aye, there is honor among thieves.",None)
 }
 
 def display_message(screen,key,input_str):
@@ -37,7 +40,7 @@ def display_message(screen,key,input_str):
         message_img = pygame.transform.scale(message_img,(message_size[0]-100,message_size[1]/2-50))
         screen.blit(message_img,(width/2-message_size[0]/2+50,height/2-message_size[1]/2+100))
 
-    if key in ['random_port_sell']:
+    if '{' in message:
         message = message.format(*input_str)
 
     text_rect = pygame.Rect((width/2-message_size[0]/2+50, height/2+60, message_size[0]-100, 300))
@@ -235,11 +238,42 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
                 selected = 99
                 
         elif selected == 50:
-            if selected_row == 0:
-                exec_naval_action(ship,selected_empire_naval_action)
-            elif selected_row == 1:
-                run_from_naval_action(ship,selected_empire_naval_action)
-            selected = 0
+            # if captain is a pirate and encounter is with pirates, go free.
+            if (len(ship.captain.pirate_status) > 0) and (selected_empire_naval_action == 'PIRATES'):
+                if selected_row in [0,1]:
+                    selected = 99
+                    message = 'honor_among_thieves'
+            else:
+                if selected_row == 0:
+                    victory = exec_naval_action(ship,selected_empire_naval_action)
+                elif selected_row != 0:
+                    victory = run_from_naval_action(ship,selected_empire_naval_action)
+
+                # did a victory occur, might be None, which means sailing on, no encounter
+                if victory:
+                    if victory:
+                        p_of_eight = np.random.choice([2,4,6,8,10])
+                        loot = np.random.choice(goods+2*['Silver','Slaves'])
+
+                        ship.vp += 1
+                        ship.gold += p_of_eight
+                        ship.cargo += [loot]
+
+                        if (selected_empire_naval_action not in ship.captain.pirate_status) and (selected_empire_naval_action != 'PIRATES'):
+                            ship.captain.pirate_status += [selected_empire_naval_action]
+
+                        selected = 99
+                        message = 'victory'
+                        input_str = [p_of_eight,loot]
+                    else:
+                        ship.cargo = []
+                        ship.gold = min(ship.gold,10)
+
+                        selected = 99
+                        message = 'lost'
+                else:
+                    selected = 0
+                
 
         else:
             selected = 0
