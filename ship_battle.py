@@ -5,6 +5,8 @@ from pygame.locals import *
 import pygame.mixer as mixer
 from polar_diagram import VMAX, VMAX_RAD
 from captains import CAPTAINS, EMPIRE_CAPTAINS
+from ship import Ship
+import pkg_resources
 
 width_buffer = 105
 height_buffer = 0
@@ -17,20 +19,20 @@ SMOKE = pygame.sprite.Group()
 EXPLO = pygame.sprite.Group()
 
 mixer.init()
-sound_cannon_fire = mixer.Sound('sounds/cannon_shot.mp3')
+sound_cannon_fire = mixer.Sound(pkg_resources.resource_stream('sounds','cannon_shot.mp3'))
 sound_cannon_fire.set_volume(0.9)
 
-sound_cannon_hit = mixer.Sound('sounds/cannon_hit.mp3')
+sound_cannon_hit = mixer.Sound(pkg_resources.resource_stream('sounds','cannon_hit.mp3'))
 sound_cannon_hit.set_volume(0.8)
 
-cannon_fire_smoke = pygame.image.load('images/smoke_cannon.png')
+cannon_fire_smoke = pygame.image.load(pkg_resources.resource_stream('images','smoke_cannon.png'))
 cannon_fire_smoke = pygame.transform.scale(cannon_fire_smoke, (15,30))
 cannon_fire_smoke = pygame.transform.rotate(cannon_fire_smoke, 0)
 
-cannon_fire_explo = pygame.image.load('images/explosion.png')
+cannon_fire_explo = pygame.image.load(pkg_resources.resource_stream('images','explosion.png'))
 cannon_fire_explo = pygame.transform.scale(cannon_fire_explo, (42,28))
 
-ocean_view = pygame.image.load('images/ocean_view.png')
+ocean_view = pygame.image.load(pkg_resources.resource_stream('images','ocean_view.png'))
 
 #draw wind arrow
 WIND_DIRECTION = np.random.randint(360)
@@ -38,10 +40,10 @@ VMAX[VMAX<0.03] = -0.03
 _VMAX = np.roll(VMAX,int(np.deg2rad(WIND_DIRECTION-180)/VMAX_RAD[1]-VMAX_RAD[0]))
 
 class PlayerShip(pygame.sprite.Sprite):
-    def __init__(self, x0, y0, angle, name, captain=None, guns=3):
+    def __init__(self, x0, y0, angle, name, ship):
         pygame.sprite.Sprite.__init__(self)
 
-        image = pygame.image.load('images/ship_v2.png').convert()
+        image = pygame.image.load(pkg_resources.resource_stream('images','ship_v2.png')).convert()
         image = pygame.transform.rotate(image, -90)
         image.set_colorkey((255, 255, 255), RLEACCEL)
         self.image_original = image
@@ -52,12 +54,12 @@ class PlayerShip(pygame.sprite.Sprite):
         self.y = y0
         self.size = self.image.get_size()
         self.name = name
-        self.captain = captain
+        self.captain = ship.captain
 
         # Ship Properties
-        self.hull = 9
+        self.hull = ship.planks
         self.hull_speed = 1.
-        self.guns = guns
+        self.guns = ship.guns
         self.gun_sep = 33/self.guns
         self.speed = 0
         self.aoa = angle
@@ -321,12 +323,12 @@ class Controller():
                 self.pressed_keys[k] = keys[v]
 
 class AIShip(PlayerShip):
-    def __init__(self, x0, y0, angle, name, captain=None, guns=3):
-        super().__init__(x0, y0, angle, name, captain=captain, guns=guns)
+    def __init__(self, x0, y0, angle, name, ship, enemy_ship):
+        super().__init__(x0, y0, angle, name, ship)
         self.turn_dir = 0
-
-    def update(self, pressed_keys, screen, opponent=None):
-
+        self.enemy_ship = enemy_ship
+    
+    def ai_helmsman(self):
         a = 0.05
 
         #Constant Speed
@@ -339,6 +341,7 @@ class AIShip(PlayerShip):
         self.speed = min(v,self.hull_speed/2)
 
         # Turn about the center
+
         #print(np.arctan2(dy,dx)*180/math.pi)
         #print(angle*180/math.pi)
         if distance < 100:
@@ -346,6 +349,24 @@ class AIShip(PlayerShip):
                 self.turn_dir = np.sign(angle)
 
         self.aoa += self.turn_dir * self.speed*60/(200)
+
+        # Get firing solution
+        enemy_angle = np.rad2deg(np.arctan2(self.enemy_ship.y-self.y,self.enemy_ship.x-self.x))
+        ship_angle = (self.aoa-180)
+        beam_angle = ship_angle-enemy_angle+90
+
+        if (88 < beam_angle < 92) and (pygame.time.get_ticks() > self.port_shoot+self.reload_time):
+            self.shoot(90)
+            self.port_shoot = pygame.time.get_ticks()
+
+        if (-88 > beam_angle > -92) and (pygame.time.get_ticks() > self.starboard_shoot+self.reload_time):
+            self.shoot(-90)
+            self.starboard_shoot = pygame.time.get_ticks()
+        
+
+    def update(self, pressed_keys, screen, opponent=None):
+
+        self.ai_helmsman()
 
         self.aoa = self.aoa % 360
 
@@ -379,12 +400,12 @@ class AIShip(PlayerShip):
 class AI_Control():
     pass
 
-plank_img = pygame.image.load('images/plank.png')
-cannon_img = pygame.image.load('images/cannon.png')
-sail_area_full = pygame.image.load('images/sail_area_full.png')
-sail_area_2_3 = pygame.image.load('images/sail_area_2_3.png')
-sail_area_1_3 = pygame.image.load('images/sail_area_1_3.png')
-sail_area_0_3 = pygame.image.load('images/sail_area_0_3.png')
+plank_img = pygame.image.load(pkg_resources.resource_stream('images','plank.png'))
+cannon_img = pygame.image.load(pkg_resources.resource_stream('images','cannon.png'))
+sail_area_full = pygame.image.load(pkg_resources.resource_stream('images','sail_area_full.png'))
+sail_area_2_3 = pygame.image.load(pkg_resources.resource_stream('images','sail_area_2_3.png'))
+sail_area_1_3 = pygame.image.load(pkg_resources.resource_stream('images','sail_area_1_3.png'))
+sail_area_0_3 = pygame.image.load(pkg_resources.resource_stream('images','sail_area_0_3.png'))
 
 def player_stats(screen,PlayerShip,num,side):
 
@@ -489,10 +510,10 @@ def main(Ship1,Ship2):
         players = [(player1,controller1,player2),(player2,controller2,player1)]
     else:
         # 1 player vs AI
-        player1 = PlayerShip(x1, y1, (a1-180) % 360, 'Name', captain=Ship1['captain'], guns=Ship1['guns'])
+        player1 = PlayerShip(x1, y1, (a1-180) % 360, 'Name', Ship1)
         controller1 = Controller(None)
 
-        player2 = AIShip(x2, y2, (a2-180) % 360 + 10, 'Name2', captain=Ship2['captain'], guns=Ship2['guns'])
+        player2 = AIShip(x2, y2, (a2-180) % 360 + 10, 'Name2', Ship2, player1)
         ai_controller = AI_Control()
 
         players = [(player1,controller1),(player2,ai_controller)]
@@ -560,4 +581,4 @@ def main(Ship1,Ship2):
     return (player2.hull <= 0)
 
 if __name__ == '__main__':
-    main({'captain':CAPTAINS[0],'guns':3},{'captain':EMPIRE_CAPTAINS['ENGLISH'],'guns':3})
+    main(Ship(CAPTAINS[0]),Ship(EMPIRE_CAPTAINS['ENGLISH']))

@@ -5,6 +5,7 @@ import numpy as np
 import random
 from ship_battle import main as ship_battle
 from captains import EMPIRE_CAPTAINS
+from ship import Ship
 
 empire_square_prob = {}
 for e in _EMPIRES + ['PIRATES']:
@@ -31,7 +32,9 @@ def select_empire(x,y):
         
 def exec_naval_action(ship,empire):   
     victory = None
-    victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
+    enemy_ship = Ship(EMPIRE_CAPTAINS[empire])
+    enemy_ship.random_stats()
+    victory = ship_battle(ship,enemy_ship)
     return victory
 
 
@@ -39,5 +42,7 @@ def run_from_naval_action(ship,empire):
     # pirate status forces an encounter, or a pirate on merchant forces encounter
     victory = None
     if (empire in ship.captain.pirate_status) or ((len(ship.captain.pirate_status) == 0) and (empire == 'PIRATES')):
-        victory = ship_battle({"captain":ship.captain,"guns":ship.guns},{"captain":EMPIRE_CAPTAINS[empire],"guns":3})
+        enemy_ship = Ship(EMPIRE_CAPTAINS[empire])
+        enemy_ship.random_stats()
+        victory = ship_battle(ship,enemy_ship)
     return victory

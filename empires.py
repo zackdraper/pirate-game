@@ -1,4 +1,5 @@
 import pygame
+import pkg_resources
 
 _EMPIRES = ['ENGLISH','SPANISH','FRENCH','DUTCH']
 
@@ -11,11 +12,11 @@ empire_color = {
 }
 
 empire_flag = {
-    'ENGLISH':pygame.image.load('images/flags/ENGLISH.png'),
-    'SPANISH':pygame.image.load('images/flags/SPANISH.png'),
-    'FRENCH':pygame.image.load('images/flags/FRENCH.png'),
-    'DUTCH':pygame.image.load('images/flags/DUTCH.png'),
-    'PIRATES':pygame.image.load('images/flags/pirate_flag5.png')
+    'ENGLISH':pygame.image.load(pkg_resources.resource_stream('images','flags/ENGLISH.png')),
+    'SPANISH':pygame.image.load(pkg_resources.resource_stream('images','flags/SPANISH.png')),
+    'FRENCH':pygame.image.load(pkg_resources.resource_stream('images','flags/FRENCH.png')),
+    'DUTCH':pygame.image.load(pkg_resources.resource_stream('images','flags/DUTCH.png')),
+    'PIRATES':pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag5.png'))
 }
 
 empire_long_name = {

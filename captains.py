@@ -1,16 +1,17 @@
 import pygame
 from empires import EMPIRES
+import pkg_resources
 
 _CAPTAINS = ['Black Sam','Calico Jack','Stede Bonnet','Edward Low']
 
 captain_flag = {
-    'Black Sam':pygame.image.load('images/flags/pirate_flag1.png'),
-    'Stede Bonnet':pygame.image.load('images/flags/pirate_flag2.png'),
-    'Calico Jack':pygame.image.load('images/flags/pirate_flag3.png'),
-    'Edward Low':pygame.image.load('images/flags/pirate_flag4.png'),
+    'Black Sam':pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag1.png')),
+    'Stede Bonnet':pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag2.png')),
+    'Calico Jack':pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag3.png')),
+    'Edward Low':pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag4.png')),
 }
 
-generic_pirate_flag = pygame.image.load('images/flags/pirate_flag5.png')
+generic_pirate_flag = pygame.image.load(pkg_resources.resource_stream('images','flags/pirate_flag5.png'))
 
 class Captain():
     def __init__(self,name,flag) -> None:

@@ -6,37 +6,44 @@ from actions import exec_naval_action, run_from_naval_action
 import random
 from init import width, height
 from empires import EMPIRES
-from actions import select_empire
+import pkg_resources
 
 pygame.font.init()
 
-font = pygame.font.Font('font/TradeWinds-Regular.ttf', 26)
-menu_img = pygame.image.load('images/tile_map_menu.png')
+font = pygame.font.Font(pkg_resources.resource_stream('font','TradeWinds-Regular.ttf'), 26)
+menu_img = pygame.image.load(pkg_resources.resource_stream('images','tile_map_menu.png'))
 
 MESSAGES = {
-    "no_port":("You are not in a square with a port!\n Heave Ho!","images/no_port.png"),
+    "no_port":("You are not in a square with a port!\n Heave Ho!","no_port.png"),
     "buy_no_gold":("Blimey!\n You don't have enough peices of eight to buy this cargo!",None),
     "port_is_out":("The port is out of goods\n Weigh Anchor!",None),
     "cargo_full":("Belay that!\n The cargo hold is full.",None),
     "sell_no_cargo":("Quartermaster says we're out!\n No goods to sell.",None),
     "random_port_sell":("The local scuttlebutt says the port of {0} is buying {1} for {2} peices of eight.",None),
     "out_of_moves":("Avast!\n The crew be too tired to go on. End your turn.",None),
-    "naval_encounter":("Sail Ho!\n Ship on the horizon, shall we engage?","images/ship_on_horizon.png"),
-    "nothing_found":("Nothing has turned up Captain...","images/no_port.png"),
+    "naval_encounter":("Sail Ho!\n Ship on the horizon, shall we engage?","ship_on_horizon.png"),
+    "nothing_found":("Nothing has turned up Captain...","no_port.png"),
     "victory":("Victory!\n You won the battle and gained a VP.\n You looted {0} pieces of eight and {1}",None),
     "lost":("You lost the battle and barely escape with your life!\n Goods are confiscated or lost.",None),
-    "honor_among_thieves":("Aye, there is honor among thieves.",None)
+    "honor_among_thieves":("Aye, there is honor among thieves.",None),
+    "bury_treasure":("Treasure is safe here!\n Gain a victory point.",None),
+    "bury_treasure_no_gold":("We've got nothing to stash!\n Gain 10 pieces of 8 to exchange for a VP.",None),
+    "not_enough_money":("Blimey!\n Not enough silver in the coffers for that.",None),
+    "too_many_guns":("Captain, we can't fit any more guns on her!",None),
 }
 
-def display_message(screen,key,input_str):
-    message,image = MESSAGES[key]
+def display_message(screen,key,input_str,image=None):
+    if key in MESSAGES.keys():
+        message,image = MESSAGES[key]
+    else:
+        message = key
 
     message_size = (600,600)
     message_menu_img = pygame.transform.scale(menu_img,message_size)
     screen.blit(message_menu_img,(width/2-message_size[0]/2,height/2-message_size[1]/2))
 
     if image:
-        mesage_img = pygame.image.load(image)
+        message_img = pygame.image.load(pkg_resources.resource_stream('images',image))
         message_img = pygame.transform.scale(message_img,(message_size[0]-100,message_size[1]/2-50))
         screen.blit(message_img,(width/2-message_size[0]/2+50,height/2-message_size[1]/2+100))
 
@@ -58,7 +65,7 @@ def display_naval_action(screen,ship,selected_row,selected_empire):
     message_menu_img = pygame.transform.scale(menu_img,message_size)
     screen.blit(message_menu_img,(width/2-message_size[0]/2,height/2-message_size[1]/2))
 
-    message_img = pygame.image.load(image)
+    message_img = pygame.image.load(pkg_resources.resource_stream('images',image))
     message_img = pygame.transform.scale(message_img,(message_size[0]-100,message_size[1]/2-50))
     screen.blit(message_img,(width/2-message_size[0]/2+50,height/2-message_size[1]/2+100))
 
@@ -115,7 +122,9 @@ def port_action_rumor(local_port):
 
 
 def port_action_mission():
+
     pass
+    
 
 
 def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_x,message,input_str,selected_empire_naval_action):
@@ -128,8 +137,9 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
 
     if selected < 50:
         # select menu
-        menu_1 = ['Search','Port Action','Exit']
-        menu_2 = ['Buy','Sell','Upgrade Ship','Rumour','Quest']
+        menu_1 = ['Search','Port Action','Bury Treasure','Exit']
+        menu_2 = ['Buy','Sell','Shipyard','Rumour','Quest']
+        menu_5 = ['Buy Galleon','Buy Cannons','Repair']
         
         port = ship.ship_in_port(ports)
         menu_3 = []
@@ -138,34 +148,41 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
             menu_3 = list(port.sell_goods_prices.keys())
             menu_4 = list(port.buy_goods_prices.keys())
 
-        menus = [0,len(menu_1),len(menu_2),len(menu_3),len(menu_4)]
+        menus = [0,len(menu_1),len(menu_2),len(menu_3),len(menu_4),len(menu_5)]
         menu_select = ['black'] * (menus[min(len(menus),selected)])
 
         if -1 < selected_row and selected_row < len(menu_select):
             menu_select[selected_row] = 'red'
 
-        menu = [font.render(s,True,c) for s,c in zip(menu_1,menu_select)]
         price_menu = None
+        if selected == 1:
+            menu = [font.render(s,True,c) for s,c in zip(menu_1,menu_select)]
 
-        if selected == 2:
+        elif selected == 2:
             menu = [font.render(s,True,c) for s,c in zip(menu_2,menu_select)]
 
-        if selected == 3:
+        elif selected == 3:
             menu = [font.render(s,True,c) for s,c in zip(menu_3,menu_select)]
             prices = [str(x) for x in list(port.sell_goods_prices.values())]
             price_menu = [font.render(s,True,c) for s,c in zip(prices,menu_select)]
 
-        if selected == 4:
+        elif selected == 4:
             menu = [font.render(s,True,c) for s,c in zip(menu_4,menu_select)]
             prices = [str(x) for x in list(port.buy_goods_prices.values())]
             price_menu = [font.render(s,True,c) for s,c in zip(prices,menu_select)]
+        
+        elif selected == 5:
+            menu = [font.render(s,True,c) for s,c in zip(menu_5,menu_select)]
+            prices = [str(x) for x in [20,10,1]]
+            price_menu = [font.render(s,True,c) for s,c in zip(prices,menu_select)]
+
     
         screen.blit(menu_img, pos)
         for i,m in enumerate(menu):
             screen.blit(m,(pos[0]+10,pos[1]+i*35+35))
         if price_menu:
             for i,m in enumerate(price_menu):
-                screen.blit(m,(pos[0]+160,pos[1]+i*35+35))
+                screen.blit(m,(pos[0]+185,pos[1]+i*35+35))
 
     if selected == 50:
         display_naval_action(screen,ship,selected_row,selected_empire_naval_action)
@@ -181,13 +198,22 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
                 ship.map_moves -= 1
                 selected = 0
                 selected,message = action_search_square(screen,ship)
-            elif selected_row == 1: 
+            elif selected_row == 1: # Port Action
                 if port:
                     selected = 2
                 else:
                     message = "no_port"
                     selected = 99
-            elif selected_row == 2: #Exit
+            elif selected_row == 2: # Bury Treasure
+                if ship.gold >= 10:
+                    ship.gold -= 10
+                    ship.vp += 1
+                    selected = 99
+                    message = "bury_treasure"
+                else:
+                    selected = 99
+                    message = "bury_treasure_no_gold"
+            elif selected_row == 3: # Exit
                 selected = 0
         # Port Action
         elif selected == 2:
@@ -196,7 +222,7 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
             elif selected_row == 1:
                 selected = 4
             elif selected_row == 2:
-                pass
+                selected = 5
             elif selected_row == 3:
                 port = ship.ship_in_port(ports)
                 message,selected,input_str = port_action_rumor(port)
@@ -236,6 +262,30 @@ def display_menu(screen,ship,ports,selected,selected_row,execute_menu,divisions_
             else:
                 message = 'sell_no_cargo'
                 selected = 99
+
+        elif selected == 5:
+            #purchase = menu_4[selected_row]
+            cost = [20,10,5][selected_row]
+            if (ship.gold >= cost):
+                if selected_row == 0:
+                    ship.upgrade_ship()
+                    ship.gold -= cost
+                elif selected_row == 1:
+                    if ship.guns < 6:
+                        ship.guns += 1
+                        ship.gold -= cost
+                    else:
+                        message = 'too_many_guns'
+                        selected = 99
+                elif selected_row == 2:
+                    if ship.planks < ship.max_planks:
+                        ship.planks += 3
+                        ship.planks = min(ship.planks,ship.max_planks)
+                        ship.gold -= cost
+            else:
+                message = "not_enough_money"
+                selected = 99
+
                 
         elif selected == 50:
             # if captain is a pirate and encounter is with pirates, go free.

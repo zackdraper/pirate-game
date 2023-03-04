@@ -1,20 +1,21 @@
 import pygame
 import pygame.mixer as mixer
-import string
 from pygame.locals import KEYDOWN,QUIT,K_ESCAPE
-from tile_map_menu import display_menu, menu_move, display_naval_action
+from tile_map_menu import display_menu, menu_move
 from ports import plot_ports, PORTS
 from controller import Controller
 from ship import Ship
 from math import floor
 import random
-
 from init import BLACK,PADLEFTRIGHT,PADTOPBOTTOM
 from init import height,width,alphabet,numbers,divisions_x,divisions_y,lw
-from empires import EMPIRES,empire_color
+from empires import EMPIRES
 from captains import CAPTAINS
-
 from actions import select_empire
+import pkg_resources
+
+plank_img = pygame.image.load(pkg_resources.resource_stream('images','plank.png'))
+cannon_img = pygame.image.load(pkg_resources.resource_stream('images','cannon.png'))
 
 def drawGrid(surface, divisions_x, divisions_y):
     # DRAW Rectangle
@@ -69,8 +70,8 @@ def display_static_screen(screen,TURN_COUNT):
     surface.fill((0,0,0))
     screen.blit(surface,(0,height - (PADTOPBOTTOM-5)))
 
-    font = pygame.font.Font('font/TradeWinds-Regular.ttf', 18)
-    font2 = pygame.font.Font('font/TradeWinds-Regular.ttf', 32)
+    font = pygame.font.Font(pkg_resources.resource_stream('font','TradeWinds-Regular.ttf'), 18)
+    font2 = pygame.font.Font(pkg_resources.resource_stream('font','TradeWinds-Regular.ttf'), 32)
 
     padleft = 10
     padtop = height - (PADTOPBOTTOM-5)
@@ -98,7 +99,7 @@ def display_ship_stats(screen,ship):
     surface.fill((227,203,165))
     screen.blit(surface,(0,0))
     
-    font = pygame.font.Font('font/TradeWinds-Regular.ttf', 18)
+    font = pygame.font.Font(pkg_resources.resource_stream('font','TradeWinds-Regular.ttf'), 18)
 
     ship_text = font.render('Captain '+ship.captain.name,True,'black')
     screen.blit(ship_text,(150,5))
@@ -122,22 +123,75 @@ def display_ship_stats(screen,ship):
     ship_text = font.render("Cargo :"+str(', '.join(ship.cargo)),True,'black')
     screen.blit(ship_text,(width-350,35))
 
+    ship_text = font.render(": "+str(ship.guns),True,'black')
+    screen.blit(ship_text,(width-225,5))
+    screen.blit(cannon_img,(width-265,5))
 
-def main(NUM_PLAYERS=1,SOUND_ON=True):
+    ship_text = font.render(": "+str(ship.planks),True,'black')
+    screen.blit(ship_text,(width-150,5))
+    screen.blit(plank_img,(width-190,10))
+
+def display_no_go(screen):
+    from init import forbidden_tiles
+
+    horizontal_cellsize = (width - (PADLEFTRIGHT*2))/divisions_x
+    vertical_cellsize = (height - (PADTOPBOTTOM*2))/divisions_y
+
+    for tile in forbidden_tiles:
+        x = tile[0]
+        y = tile[1]
+        pygame.draw.circle(screen, (0,0,0), ((PADLEFTRIGHT + (horizontal_cellsize*x) + horizontal_cellsize/2),(PADTOPBOTTOM + (vertical_cellsize*y) + vertical_cellsize/2)), 20)
+
+def display_land(screen):
+    from init import land_tiles
+
+    horizontal_cellsize = (width - (PADLEFTRIGHT*2))/divisions_x
+    vertical_cellsize = (height - (PADTOPBOTTOM*2))/divisions_y
+
+    for tile in land_tiles:
+        x = tile[0]
+        y = tile[1]
+        pygame.draw.circle(screen, (255,0,0), ((PADLEFTRIGHT + (horizontal_cellsize*x) + horizontal_cellsize/2),(PADTOPBOTTOM + (vertical_cellsize*y) + vertical_cellsize/2)), 15)
+
+def display_ocean(screen):
+    from init import ocean_tiles
+
+    horizontal_cellsize = (width - (PADLEFTRIGHT*2))/divisions_x
+    vertical_cellsize = (height - (PADTOPBOTTOM*2))/divisions_y
+
+    for tile in ocean_tiles:
+        x = tile[0]
+        y = tile[1]
+        pygame.draw.circle(screen, (0,255,0), ((PADLEFTRIGHT + (horizontal_cellsize*x) + horizontal_cellsize/2),(PADTOPBOTTOM + (vertical_cellsize*y) + vertical_cellsize/2)), 15)
+
+def display_cant_go(screen):
+    from init import cant_move
+
+    horizontal_cellsize = (width - (PADLEFTRIGHT*2))/divisions_x
+    vertical_cellsize = (height - (PADTOPBOTTOM*2))/divisions_y
+
+    for tile in cant_move:
+        x = tile[0]
+        y = tile[1]
+        pygame.draw.circle(screen, (0,0,0), ((PADLEFTRIGHT + (horizontal_cellsize*x) + horizontal_cellsize/2),(PADTOPBOTTOM + (vertical_cellsize*y) + vertical_cellsize/2)), 5)
+
+
+def main(NUM_PLAYERS=1,SOUND_ON=False,DEBUG=False):
     pygame.display.set_caption('Pirate Game')
 
     # initialize pygame
     pygame.init()
 
     mixer.init()
-    mixer.music.load("music/the_coast_of_high_barbary.mp3")
+    mixer.music.load(pkg_resources.resource_stream('music','the_coast_of_high_barbary.mp3'))
     mixer.music.set_volume(0.15)
-    #mixer.music.play(loops=-1)
+    if SOUND_ON:
+        mixer.music.play(loops=-1)
 
     # create the screen object
     screen = pygame.display.set_mode((width, height))
 
-    bg = pygame.image.load('images/carribbean_map_v2.png')
+    bg = pygame.image.load(pkg_resources.resource_stream('images','carribbean_map_v2.png'))
     bg = pygame.transform.scale(bg,(width,height))
 
     clock = pygame.time.Clock()
@@ -185,11 +239,12 @@ def main(NUM_PLAYERS=1,SOUND_ON=True):
                 pressed_keys = controller.pressed_keys
                 if selected == 0: 
                     if any([pressed_keys[key] for key in ['UP','DOWN','LEFT','RIGHT']]):
-                        player_ship.move(pressed_keys)
+                        succed = player_ship.move(pressed_keys)
                         # Random Encounter
-                        if random.random() < 0.2:
-                            selected = 50
-                            selected_empire_naval_action = select_empire(player_ship.posx,player_ship.posy)
+                        if succed:
+                            if random.random() < 0.2:
+                                selected = 50
+                                selected_empire_naval_action = select_empire(player_ship.posx,player_ship.posy)
                     elif pressed_keys['B'] or pressed_keys ['Y']:
                         selected = True
                         selected_row = 0
@@ -212,6 +267,12 @@ def main(NUM_PLAYERS=1,SOUND_ON=True):
             elif event.type == QUIT:
                 running = False
 
+        if DEBUG:
+            display_no_go(screen)
+            display_land(screen)
+            display_ocean(screen)
+            display_cant_go(screen)
+
         display_ship_stats(screen,player_ship)
         display_static_screen(screen,TURN_COUNT)
         drawGrid(screen,divisions_x,divisions_y)
@@ -225,4 +286,4 @@ def main(NUM_PLAYERS=1,SOUND_ON=True):
         clock.tick(60)
 
 if __name__ == '__main__':
-    main()
+    main(DEBUG=True)

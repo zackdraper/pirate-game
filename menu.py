@@ -4,6 +4,7 @@ import pygame.mixer as mixer
 from pygame_menu import sound
 from ship_battle import main as ship_battle
 from tile_map import main as tile_map 
+import pkg_resources
 
 res = (1024,768)
 pygame.init()
@@ -15,13 +16,17 @@ color_dark = (100,100,100)
 width = screen.get_width()
 height = screen.get_height()
 
+global NUM_PLAYERS
+global SOUND_ON
 NUM_PLAYERS = 1
 SOUND_ON = True
 
-def set_number_of_players(value, players):
+def set_number_of_players(text, value):
+    global NUM_PLAYERS
     NUM_PLAYERS = value
 
-def set_sound(value):
+def set_sound(text, value):
+    global SOUND_ON
     SOUND_ON = value
 
 def start_the_game():
@@ -38,27 +43,27 @@ def game_credits():
     pass
 
 def menu_music():
-    mixer.music.load("music/intro.mp3")
+    mixer.music.load(pkg_resources.resource_stream('music','intro_down_sample.mp3'))
     mixer.music.set_volume(0.7)
     mixer.music.play(loops=-1)
 
-pirate_font = pygame.font.Font("font/TradeWinds-Regular.ttf", 36)
+pirate_font = pygame.font.Font(pkg_resources.resource_stream('font','TradeWinds-Regular.ttf'), 36)
 
 # Play Intro Music
-mixer.init()
+mixer.init(48000, -16, 1, 1024)
 menu_music()
 
 # Sounds
 menu_sound = sound.Sound()
-menu_sound.set_sound(pygame_menu.sound.SOUND_TYPE_WIDGET_SELECTION, sound_file='music/sword.mp3')
+menu_sound.set_sound(pygame_menu.sound.SOUND_TYPE_WIDGET_SELECTION, sound_file=pkg_resources.resource_stream('sounds','sword_down_sample.mp3'))
 
 
 game_theme = pygame_menu.themes.THEME_DARK
 title_image = pygame_menu.baseimage.BaseImage(
-    image_path="images/title_page.png",
+    image_path=pkg_resources.resource_stream('images','title_page.png'),
 )
 game_theme.background_color = title_image
-game_theme.title_bar_style = title_bar_style = pygame_menu.widgets.MENUBAR_STYLE_NONE
+game_theme.title_bar_style = pygame_menu.widgets.MENUBAR_STYLE_NONE
 game_theme.widget_font = pirate_font
 game_theme.widget_font_color = (0, 0, 0)
 game_theme.selection_color = (255, 215, 0)
@@ -82,4 +87,4 @@ menu.add.button('Ship Battle', start_ship_battle)
 menu.add.button('Credits', game_credits)
 menu.add.button('Quit', pygame_menu.events.EXIT)
 
-menu.mainloop(screen)
+menu.mainloop(screen,fpslimit=60)
